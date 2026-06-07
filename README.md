@@ -94,3 +94,34 @@ Toggle the status bar on/off:
 ```
 
 When enabled, the footer is replaced by the two-line status bar. When disabled, the default footer is restored.
+
+### History Chart
+
+View how context composition evolved during the session:
+
+```
+/context-bar history
+```
+
+This shows a mini bar chart with up to 10 snapshots (one per turn), each displaying:
+- **Mini bar** — proportional token share per segment (color-coded)
+- **Labels** — segment name and percentage
+
+Example output:
+
+```
+ Context History  (4 snapshots, 4 turns)
+
+#1 │ ████████████░░░░░░░░░░░░ System 60% LLM 40%
+#2 │ ██████████████████░░░░░░ System 45% LLM 40% Tools 15%
+#3 │ ██████████████████████░░ System 30% LLM 40% Tools 30%
+#4 │ ████████████████████████ System 25% LLM 35% Tools 40%
+
+─────────────────────────────────────────────────────►
+  time →
+```
+
+This lets you spot trends like:
+- **Tools growing** — agent is making many tool calls over time
+- **LLM shrinking** — agent responses are getting more concise
+- **System constant** — fixed overhead from your system prompt
