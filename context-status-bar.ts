@@ -418,6 +418,7 @@ function renderStatusBar(
 // ─── Extension ──────────────────────────────────────────────────────
 
 let enabled = false;
+let lastTotalTokens = -1; // Guard against capturing on every render
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("context-bar", {
@@ -442,8 +443,11 @@ export default function (pi: ExtensionAPI) {
               const usage = ctx.getContextUsage();
               const realContextTokens = usage?.tokens ?? null;
 
-              // Capture snapshot for history (only when context changed meaningfully)
-              addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
+                          // Capture snapshot for history — only when context actually changed
+              if (totalTokens !== lastTotalTokens) {
+                lastTotalTokens = totalTokens;
+                addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
+              }
 
               const data: ContextData = {
                 segments,
