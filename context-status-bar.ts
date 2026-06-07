@@ -263,10 +263,10 @@ function renderHistory(
       filled++;
     }
 
-    // Build label: "System 40% LLM 60%"
+    // Build label: "System 1.2k(40%) LLM 3.5k(60%)"
     const labelParts = entry.segments.map(s => {
       const pct = ((s.tokens / entry.totalTokens) * 100).toFixed(0);
-      return `${s.label} ${pct}%`;
+      return `${s.label} ${formatTokens(s.tokens)}(${pct}%)`;
     });
     const label = labelParts.join(" ");
 

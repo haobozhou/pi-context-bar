@@ -105,17 +105,17 @@ View how context composition evolved during the session:
 
 This shows a mini bar chart with up to 10 snapshots (one per turn), each displaying:
 - **Mini bar** — proportional token share per segment (color-coded)
-- **Labels** — segment name and percentage
+- **Labels** — segment name, token count, and percentage (e.g. `System 1.2k(60%)`)
 
 Example output:
 
 ```
  Context History  (4 snapshots, 4 turns)
 
-#1 │ ████████████░░░░░░░░░░░░ System 60% LLM 40%
-#2 │ ██████████████████░░░░░░ System 45% LLM 40% Tools 15%
-#3 │ ██████████████████████░░ System 30% LLM 40% Tools 30%
-#4 │ ████████████████████████ System 25% LLM 35% Tools 40%
+#1 │ ████████████░░░░░░░░░░░░ System 1.2k(60%) LLM 0.8k(40%)
+#2 │ ██████████████████░░░░░░ System 1.5k(45%) LLM 1.3k(40%) Tools 0.5k(15%)
+#3 │ ██████████████████████░░ System 1.0k(30%) LLM 1.3k(40%) Tools 1.2k(30%)
+#4 │ ████████████████████████ System 1.0k(25%) LLM 1.4k(35%) Tools 1.5k(40%)
 
 ─────────────────────────────────────────────────────►
   time →
