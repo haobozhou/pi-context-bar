@@ -189,8 +189,8 @@ function formatTokens(n: number): string {
 const segmentIcons: Record<string, string> = {
   System: "⚙",
   LLM: "🤖",
-  User: "◉",
-  Tools: "⚡",
+  User: "👤",
+  Tools: "🔧",
   Summary: "◈",
   Custom: "⊕",
 };
