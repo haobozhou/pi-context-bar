@@ -13,6 +13,7 @@
  *   - Token count and percentage per category
  *   - Context window utilization indicator
  *   - Model name display
+ *   - History tracking with /context-bar history
  *
  * Toggle with /context-bar command.
  */
@@ -195,6 +196,101 @@ const segmentIcons: Record<string, string> = {
   Custom: "⊕",
 };
 
+// ─── History tracking ───────────────────────────────────────────────
+
+interface HistoryEntry {
+  segments: ContextSegment[];
+  totalTokens: number;
+  realContextTokens: number | null;
+  turnIndex: number;
+}
+
+let historyBuffer: HistoryEntry[] = [];
+const MAX_HISTORY = 10;
+let turnCounter = 0;
+
+function addSnapshot(
+  entries: SessionEntry[],
+  systemPrompt: string,
+  contextWindow: number | undefined,
+  realContextTokens: number | null
+): void {
+  const segments = computeContextSegments(entries, systemPrompt);
+  const totalTokens = segments.reduce((sum, s) => sum + s.tokens, 0);
+  turnCounter++;
+  historyBuffer.push({ segments, totalTokens, realContextTokens, turnIndex: turnCounter });
+  if (historyBuffer.length > MAX_HISTORY) {
+    historyBuffer.shift();
+  }
+}
+
+function renderHistory(
+  width: number,
+  theme: { fg: (color: string, text: string) => string; bold: (text: string) => string }
+): string[] {
+  const lines: string[] = [];
+
+  if (historyBuffer.length === 0) {
+    return [theme.fg("dim", "No history yet — send a message to start tracking")];
+  }
+
+  // Find max tokens for scaling
+  const maxTokens = Math.max(...historyBuffer.map(s => s.totalTokens), 1);
+  const barWidth = Math.min(24, Math.floor((width - 14) / 2)); // leave room for label
+
+  // Header
+  lines.push(
+    theme.bold(
+      ` Context History  (${historyBuffer.length} snapshots, ${turnCounter} turns)`
+    )
+  );
+  lines.push("");
+
+  // Each row: turn │ mini-bar  segment labels
+  for (const entry of historyBuffer) {
+    // Build mini bar
+    let bar = "";
+    let filled = 0;
+    for (const seg of entry.segments) {
+      const segWidth = Math.max(1, Math.round((seg.tokens / maxTokens) * barWidth));
+      const actualWidth = Math.min(segWidth, barWidth - filled);
+      bar += theme.fg(seg.color, "█".repeat(actualWidth));
+      filled += actualWidth;
+      if (filled >= barWidth) break;
+    }
+    while (filled < barWidth) {
+      bar += theme.fg("dim", "░");
+      filled++;
+    }
+
+    // Build label: "System 40% LLM 60%"
+    const labelParts = entry.segments.map(s => {
+      const pct = ((s.tokens / entry.totalTokens) * 100).toFixed(0);
+      return `${s.label} ${pct}%`;
+    });
+    const label = labelParts.join(" ");
+
+    // Pad label if it's too long
+    const labelWidth = Math.min(label.length, width - barWidth - 10);
+    const paddedLabel = label.slice(0, labelWidth);
+
+    lines.push(
+      theme.fg("dim", `#${entry.turnIndex} │`) +
+      " " +
+      bar +
+      " " +
+      paddedLabel
+    );
+  }
+
+  // Footer
+  lines.push("");
+  lines.push(theme.fg("dim", "─────────────────────────────────────────────────────►"));
+  lines.push(theme.fg("dim", "  time →"));
+
+  return lines;
+}
+
 // ─── Progress bar rendering ─────────────────────────────────────────
 
 /**
@@ -346,6 +442,9 @@ export default function (pi: ExtensionAPI) {
               const usage = ctx.getContextUsage();
               const realContextTokens = usage?.tokens ?? null;
 
+              // Capture snapshot for history (only when context changed meaningfully)
+              addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
+
               const data: ContextData = {
                 segments,
                 totalTokens,
@@ -362,6 +461,26 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setFooter(undefined);
         ctx.ui.notify("Context status bar disabled", "info");
       }
+    },
+  });
+
+  pi.registerCommand("context-bar history", {
+    description: "Show context composition history",
+    handler: async (_args, ctx) => {
+      const theme = ctx.ui.theme;
+      const entries = ctx.sessionManager.getBranch();
+      const segments = computeContextSegments(entries, ctx.getSystemPrompt());
+      const totalTokens = segments.reduce((sum, s) => sum + s.tokens, 0);
+      const model = ctx.model;
+      const contextWindow = model?.contextWindow;
+      const usage = ctx.getContextUsage();
+      const realContextTokens = usage?.tokens ?? null;
+
+      // Capture current state
+      addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
+
+      const lines = renderHistory(200, theme);
+      ctx.ui.notify(lines.join("\n"), "info");
     },
   });
 
