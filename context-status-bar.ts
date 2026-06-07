@@ -422,8 +422,30 @@ let lastTotalTokens = -1; // Guard against capturing on every render
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("context-bar", {
-    description: "Toggle context composition status bar",
-    handler: async (_args, ctx) => {
+    description: "Toggle context composition status bar (use /context-bar history for history)",
+    handler: async (args: string, ctx) => {
+      const subcommand = (args || "").trim().toLowerCase();
+
+      if (subcommand === "history") {
+        // Show history chart
+        const theme = ctx.ui.theme;
+        const entries = ctx.sessionManager.getBranch();
+        const segments = computeContextSegments(entries, ctx.getSystemPrompt());
+        const totalTokens = segments.reduce((sum, s) => sum + s.tokens, 0);
+        const model = ctx.model;
+        const contextWindow = model?.contextWindow;
+        const usage = ctx.getContextUsage();
+        const realContextTokens = usage?.tokens ?? null;
+
+        // Capture current state
+        addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
+
+        const lines = renderHistory(200, theme);
+        ctx.ui.notify(lines.join("\n"), "info");
+        return;
+      }
+
+      // Default: toggle enabled
       enabled = !enabled;
 
       if (enabled) {
@@ -443,7 +465,7 @@ export default function (pi: ExtensionAPI) {
               const usage = ctx.getContextUsage();
               const realContextTokens = usage?.tokens ?? null;
 
-                          // Capture snapshot for history — only when context actually changed
+              // Capture snapshot for history — only when context actually changed
               if (totalTokens !== lastTotalTokens) {
                 lastTotalTokens = totalTokens;
                 addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
@@ -465,26 +487,6 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setFooter(undefined);
         ctx.ui.notify("Context status bar disabled", "info");
       }
-    },
-  });
-
-  pi.registerCommand("context-bar history", {
-    description: "Show context composition history",
-    handler: async (_args, ctx) => {
-      const theme = ctx.ui.theme;
-      const entries = ctx.sessionManager.getBranch();
-      const segments = computeContextSegments(entries, ctx.getSystemPrompt());
-      const totalTokens = segments.reduce((sum, s) => sum + s.tokens, 0);
-      const model = ctx.model;
-      const contextWindow = model?.contextWindow;
-      const usage = ctx.getContextUsage();
-      const realContextTokens = usage?.tokens ?? null;
-
-      // Capture current state
-      addSnapshot(entries, ctx.getSystemPrompt(), contextWindow, realContextTokens);
-
-      const lines = renderHistory(200, theme);
-      ctx.ui.notify(lines.join("\n"), "info");
     },
   });
 
