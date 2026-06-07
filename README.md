@@ -39,8 +39,8 @@ Each bracketed segment shows:
 |------|-------|----------|
 | ⚙ | System | System prompt, `agent.md`, skills, tool descriptions |
 | 🤖 | LLM | Assistant / model response tokens |
-| ◉ | User | User message tokens |
-| ⚡ | Tools | Tool call results and bash execution outputs |
+| 👤 | User | User message tokens |
+| 🔧 | Tools | Tool call results and bash execution outputs |
 | ◈ | Summary | Compaction and branch summary tokens |
 | ⊕ | Custom | Extension-injected messages |
 
