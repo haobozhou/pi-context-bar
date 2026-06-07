@@ -125,3 +125,17 @@ This lets you spot trends like:
 - **Tools growing** — agent is making many tool calls over time
 - **LLM shrinking** — agent responses are getting more concise
 - **System constant** — fixed overhead from your system prompt
+
+#### How it works
+
+Snapshots are captured automatically when the context changes — specifically when the **total token count** differs from the last snapshot. This means a snapshot is taken whenever:
+
+| Event | Captures snapshot? |
+|-------|-------------------|
+| User sends a prompt | ✅ (user message + tool calls) |
+| LLM responds (new assistant message) | ✅ (LLM tokens added) |
+| Tool output arrives | ✅ (tool tokens added) |
+| Compaction happens | ✅ (summary replaces old messages) |
+| TUI redraws (no new messages) | ❌ (tokens unchanged, guard skips) |
+
+The guard `totalTokens !== lastTotalTokens` prevents spamming snapshots on every TUI redraw tick. If the LLM is streaming (partial response), you may get multiple snapshots as tokens accumulate — the `MAX_HISTORY = 10` cap prevents unbounded growth.
